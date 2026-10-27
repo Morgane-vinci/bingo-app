@@ -1,0 +1,28 @@
+name: Fabriquer l'appli iPhone
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils
+        run: |
+          brew install xcodegen
+          python3 -m pip install --break-system-packages --user pillow
+      - name: Icone
+        run: python3 make_icon.py
+      - name: Projet Xcode
+        run: xcodegen generate
+      - name: Compilation
+        run: |
+          xcodebuild -project Bingo.xcodeproj -scheme Bingo -sdk iphoneos -configuration Release \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Emballage .ipa
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Bingo.app Payload/
+          zip -qry Bingo.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Bingo-ipa
+          path: Bingo.ipa
